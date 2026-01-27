@@ -1,0 +1,7 @@
+{
+    "name":"short",
+    "data": {
+        "payload" : [1, 5, 9, 15],
+        "meta" : "something here."
+    }
+}

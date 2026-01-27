@@ -1,0 +1,10 @@
+{
+    "name":"long",
+    "data": {
+        "operations": [
+            {"name":"x", "code":"0x00a82b4839f848"},
+            {"name":"y", "code":"0x00a8223550de9f"},
+            {"name":"z", "code":"0x92384443bb23aa"}
+        ]
+    }
+}
