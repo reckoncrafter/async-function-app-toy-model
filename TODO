@@ -1,0 +1,3 @@
+- Add automatic SMTP mail notifications for job completion
+- Add HTTP client for interaction with backend API
+- Add managed identity
