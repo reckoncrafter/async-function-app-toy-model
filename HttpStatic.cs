@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using System.Net.Mime;
 
 namespace Company.Function;
 
@@ -13,6 +14,17 @@ public class HttpStatic{
     public HttpStatic(ILogger<HttpStatic> logger)
     {
         _logger = logger;
+    }
+
+    private static string ContentType(string path){
+        string ext = Path.GetExtension(path);
+        return ext switch
+        {
+            ".js" => "text/javascript",
+            ".html" => "text/html",
+            ".css" => "text/css",
+            _ => "text/plain",
+        };
     }
 
     [Function(nameof(HttpStatic))]
@@ -24,14 +36,21 @@ public class HttpStatic{
         logger.LogInformation($"HttpStatic: GET {path}");
 
         var response = req.CreateResponse(HttpStatusCode.OK);
-        response.Headers.Add("Content-Type", "text/html; charset=utf-8");
+
+        response.Headers.Add("Content-Type", $"{ContentType(path)}; charset=utf-8");
 
         if(path.Contains("..")) // block path traversal
         {
             return req.CreateResponse(HttpStatusCode.Forbidden);
         }
+        string content;
 
-        string content = await File.ReadAllTextAsync($"wwwroot/{path}");
+        try{
+            content = await File.ReadAllTextAsync($"wwwroot/{path}");
+        }
+        catch{
+            return req.CreateResponse(HttpStatusCode.NotFound);
+        }
         await response.WriteStringAsync(content);
         return response;
     }
