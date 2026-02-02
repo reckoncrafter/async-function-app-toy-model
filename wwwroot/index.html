@@ -5,22 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Async Function App Toy Model</title>
 </head>
+<style>
+    body{
+        max-width: 50em;
+        margin: auto;
+        margin-top: 2em;
+    }
+    #jobSelectContainer{
+        display: flex;
+        flex-flow: column;
+        width: 100%;
+        justify-content: center;
+        gap: 1em;
+        margin: auto;
+    }
+    .jobSelect{
+        flex: 1;
+        border: 2px solid black;
+        border-radius: 8px;
+        padding: 0.5em;
+    }
+    .jobSelect:hover{
+        background-color: #aaaaaa;
+        cursor: pointer;
+    }
+    .jobSelect>h3{
+        margin: 0;
+        text-align: center;
+    }
+
+    #guidBox{
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+    }
+
+    .activeJob{
+        display: flex;
+        flex-flow: row;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 1em;
+        padding-right: 1em;
+        border: 2px solid black;
+        border-radius: 8px;
+    }
+    .activeJob>div{
+        display: flex;
+        flex-direction: row;
+        gap:1em;
+        font-size:2em;
+    }
+</style>
 <body>
-    <form>
-        <input type="radio" id="shortJob" value="shortJob" name="jobs">
-        <label for="shortJob">Short Job</label>
-
-        <input type="radio" id="mediumJob" value="mediumJob" name="jobs">
-        <label for="mediumJob">Medium Job</label>
-
-        <input type="radio" id="longJob" value="longJob" name="jobs">
-        <label for="longJob">Long Job</label>
-    </form>
-
-
     
-<script src="jquery-4.0.0.min.js">
+    <div id="jobSelectContainer">
+        <div class="jobSelect" id="shortJob">
+            <h3>Short Job</h3>
+            <pre id="jsonShort"></pre>
+        </div>
+        <div class="jobSelect" id="mediumJob">
+            <h3>Medium Job</h3>
+            <pre id="jsonMedium"></pre>
+        </div>
+        <div class="jobSelect" id="longJob">
+            <h3>Long Job</h3>
+            <pre id="jsonLong"></pre>
+        </div>
+    </div>
+    <hr>
+    <div id="guidBox"></div>
     
+<script src="/static/jquery-4.0.0.min.js"></script>
+<script>
+    const entries = [
+        {"div":"#shortJob","json":"/static/jobs/short.json"},
+        {"div":"#mediumJob","json":"/static/jobs/medium.json"},
+        {"div":"#longJob","json":"/static/jobs/long.json"}
+    ]
+    var jsonStrings = [];
+    
+    var activeJob = (guid, status) => `
+    <div class="activeJob">
+        <p class="jobId">${guid}</p>
+        <p class="jobStatus">${status}</p>
+        <div>
+            <span class="trash">&#x1F5D1;</span>
+        </div>
+    </div>
+    `
+
+    $(function(){
+        entries.forEach(e => {
+            $.get(e["json"], function(data){
+                e["jsonData"] = data;
+                $(`${e["div"]}>pre`).html(data);
+            }, "text");
+
+            $(e["div"]).click(function(){
+                $.post("/submitJob", e["jsonData"], function(data){
+                    const statusObj = JSON.parse(data["jobStatus"]);
+                    console.log(statusObj);
+
+                    var newActiveJob = $(activeJob(data["jobId"], statusObj.message));
+                    $("#guidBox").append(newActiveJob);
+
+                    var interval = setInterval(() => {
+                        $.get(`/jobStatus/${data["jobId"]}`, function(res){
+                            const statusObj = JSON.parse(res);
+                            console.log(statusObj);
+                            $(newActiveJob).children(".jobStatus").html(statusObj.message);
+                            if(statusObj.running == false){
+                                if(statusObj.success == false){
+                                    $(newActiveJob.css("background-color", "red"));
+                                }
+                                else{
+                                    $(newActiveJob).css("background-color", "#aaaaaa");
+                                }
+                                clearInterval(interval);
+                            }
+                        })
+                    }, 1000);
+
+                    $("#guidBox").find(".trash").each(function(){
+                        $(this).click(function(){
+                            console.log("Clicked trash.");
+                            clearInterval(interval);
+                            $(newActiveJob).remove();
+                        })
+                    })
+
+                }, "json");
+            });
+
+
+        });
+    })
+
+
 </script>
 </body>
 </html>

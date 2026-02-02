@@ -1,6 +1,7 @@
 namespace Company.Function;
 using Company.Models;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using BackgroundTask = Func<System.Text.Json.Nodes.JsonNode, string, BackgroundTaskResult>;
@@ -10,8 +11,14 @@ public enum BackgroundTaskResult {
     Failure
 };
 
+public class StatusObject {
+    public string message {get; set;} = "";
+    public bool running {get; set;} = false;
+    public bool success {get; set;} = false;
+}
+
 public static class BackgroundTaskHandler{
-    static Dictionary<string, string> JobStatus = new();
+    static Dictionary<string, StatusObject> JobStatus = new();
 
     static BackgroundTaskResult ShortTask(JsonNode data, string guid)
     {
@@ -30,13 +37,13 @@ public static class BackgroundTaskHandler{
     static BackgroundTaskResult LongTask(JsonNode data, string guid)
     {
         Console.WriteLine($"LongTask recieved: {data}");
-        JobStatus[guid] = "Collecting monoids...";
+        JobStatus[guid].message = "Collecting monoids...";
         Console.WriteLine(JobStatus[guid]);
         Task.Delay(10000).Wait();
-        JobStatus[guid] = "Sheafifying endofunctors...";
+        JobStatus[guid].message = "Sheafifying endofunctors...";
         Console.WriteLine(JobStatus[guid]);
         Task.Delay(10000).Wait();
-        JobStatus[guid] = "Calculating rectilinear tensors...";
+        JobStatus[guid].message = "Calculating rectilinear tensors...";
         Console.WriteLine(JobStatus[guid]);
         Task.Delay(10000).Wait();
         return BackgroundTaskResult.Success;
@@ -56,10 +63,14 @@ public static class BackgroundTaskHandler{
             BackgroundTaskResult r = f(jobData.data, newGuid);
             switch(r){
                 case BackgroundTaskResult.Success:
-                    JobStatus[newGuid] = "Task has completed successfully";
+                    JobStatus[newGuid].message = "Task has completed successfully";
+                    JobStatus[newGuid].running = false;
+                    JobStatus[newGuid].success = true;
                     break;
                 case BackgroundTaskResult.Failure:
-                    JobStatus[newGuid] = "Task has failed.";
+                    JobStatus[newGuid].message = "Task has failed.";
+                    JobStatus[newGuid].running = false;
+                    JobStatus[newGuid].success = false;
                     break;
                 default:
                     break;
@@ -67,7 +78,11 @@ public static class BackgroundTaskHandler{
             Console.WriteLine(JobStatus[newGuid]);
         });
 
-        JobStatus.Add(newGuid, "Job in progress...");
+        JobStatus.Add(newGuid, new StatusObject(){
+            message = "Job in progress...",
+            running = true,
+            success = false
+        });
         return newGuid;
     }
 
@@ -75,7 +90,7 @@ public static class BackgroundTaskHandler{
     {
         string response;
         try{
-            response = JobStatus[guid];
+            response = JsonSerializer.Serialize(JobStatus[guid]);
         }
         catch(KeyNotFoundException){
             response = "No status associated with this JobId";

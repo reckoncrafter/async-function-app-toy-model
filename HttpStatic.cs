@@ -28,9 +28,9 @@ public class HttpStatic{
     }
 
     [Function(nameof(HttpStatic))]
-    public static async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path}")] HttpRequestData req,
+    public static async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "static/{*path:file}")] HttpRequestData req,
         FunctionContext executionContext,
-        string path = "index.html")
+        string path)
     {
         var logger = executionContext.GetLogger(nameof(HttpStatic));
         logger.LogInformation($"HttpStatic: GET {path}");
