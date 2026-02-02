@@ -1,4 +1,4 @@
-namespace Company;
+namespace Company.Function;
 using Company.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Nodes;
