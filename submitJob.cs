@@ -33,7 +33,15 @@ public class submitJob
 
         _logger.LogInformation(requestBody);
 
-        JsonNode ? jobJson = JsonNode.Parse(requestBody); 
+        JsonNode ? jobJson;
+        try{
+            jobJson = JsonNode.Parse(requestBody);
+        }catch(JsonException){
+            return new ObjectResult("Malformed request."){
+                StatusCode = 400
+            };
+        }
+
         if(jobJson == null){
             return new ObjectResult("Unexpected Error."){
                 StatusCode = 500

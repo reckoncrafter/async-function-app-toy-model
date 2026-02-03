@@ -13,7 +13,8 @@
     }
     #jobSelectContainer{
         display: flex;
-        flex-flow: column;
+        flex-flow: row;
+        flex-wrap: wrap;
         width: 100%;
         justify-content: center;
         gap: 1em;
@@ -56,6 +57,10 @@
         gap:1em;
         font-size:2em;
     }
+
+    #textAreaContainer{
+        margin-top:1em;
+    }
 </style>
 <body>
     
@@ -76,6 +81,11 @@
             <h3>Fail Job</h3>
             <pre id="jsonFail"></pre>
         </div>
+    </div>
+    <div id="textAreaContainer">
+        <label for="customJob">Enter custom JSON payload</label><br>
+        <textarea id="customJob" name="customJob" rows="8" cols="64" style="font-family: monospace;"></textarea><br>
+        <button type="submit" id="submitCustom">Submit</button>
     </div>
     <hr>
     <div id="guidBox"></div>
@@ -100,7 +110,44 @@
     </div>
     `
 
+    function createActiveJob(data){
+        const statusObj = JSON.parse(data["jobStatus"]);
+        console.log(statusObj);
+
+        var newActiveJob = $(activeJob(data["jobId"], statusObj.message));
+        $("#guidBox").append(newActiveJob);
+
+        var interval = setInterval(() => {
+            $.get(`/jobStatus/${data["jobId"]}`, function(res){
+                const statusObj = JSON.parse(res);
+                console.log(statusObj);
+                $(newActiveJob).children(".jobStatus").html(statusObj.message);
+                if(statusObj.running == false){
+                    if(statusObj.success == false){
+                        $(newActiveJob.css("background-color", "red"));
+                    }
+                    else{
+                        $(newActiveJob).css("background-color", "#aaaaaa");
+                    }
+                    clearInterval(interval);
+                }
+            })
+        }, 1000);
+
+        $(newActiveJob).find(".trash").click(function(){
+            console.log(this);
+            clearInterval(interval);
+            $(newActiveJob).remove();
+        })
+    }
+
     $(function(){
+        $("#submitCustom").click(function(){
+            var jsonData = $("#customJob").val();
+            console.log(jsonData);
+            $.post("/submitJob", jsonData, (res) => createActiveJob(res), "json");
+        })
+
         entries.forEach(e => {
             $.get(e["json"], function(data){
                 e["jsonData"] = data;
@@ -108,40 +155,8 @@
             }, "text");
 
             $(e["div"]).click(function(){
-                $.post("/submitJob", e["jsonData"], function(data){
-                    const statusObj = JSON.parse(data["jobStatus"]);
-                    console.log(statusObj);
-
-                    var newActiveJob = $(activeJob(data["jobId"], statusObj.message));
-                    $("#guidBox").append(newActiveJob);
-
-                    var interval = setInterval(() => {
-                        $.get(`/jobStatus/${data["jobId"]}`, function(res){
-                            const statusObj = JSON.parse(res);
-                            console.log(statusObj);
-                            $(newActiveJob).children(".jobStatus").html(statusObj.message);
-                            if(statusObj.running == false){
-                                if(statusObj.success == false){
-                                    $(newActiveJob.css("background-color", "red"));
-                                }
-                                else{
-                                    $(newActiveJob).css("background-color", "#aaaaaa");
-                                }
-                                clearInterval(interval);
-                            }
-                        })
-                    }, 1000);
-
-                    $(newActiveJob).find(".trash").click(function(){
-                        console.log(this);
-                        clearInterval(interval);
-                        $(newActiveJob).remove();
-                    })
-
-                }, "json");
+                $.post("/submitJob", e["jsonData"], (res) => createActiveJob(res), "json");
             });
-
-
         });
     })
 
