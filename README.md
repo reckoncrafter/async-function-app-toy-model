@@ -1,9 +1,3 @@
-### Todo List
--[] Add SMTP integration for job notifications
--[] Add HTTP client for relaying to backend
-
-
-
 # Async Function App Toy Model
 
 This program is an Azure Function App designed to demonstrate a possible structural solution to provide an user-facing application
