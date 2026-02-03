@@ -48,6 +48,15 @@ public static class BackgroundTaskHandler{
         Task.Delay(10000).Wait();
         return BackgroundTaskResult.Success;
     }
+
+    static BackgroundTaskResult FailTask(JsonNode data, string guid)
+    {
+        Console.WriteLine($"FailTask recieved: {data}");
+        JobStatus[guid].message = "Preparing for failure...";
+        Console.WriteLine(JobStatus[guid]);
+        Task.Delay(5000).Wait();
+        return BackgroundTaskResult.Failure;
+    }
     public static string RequestNewBackgroundTask(JobData jobData){
         string newGuid = Guid.NewGuid().ToString();
 
@@ -56,6 +65,7 @@ public static class BackgroundTaskHandler{
             "short" => ShortTask,
             "medium" => MediumTask,
             "long" => LongTask,
+            "fail" => FailTask,
             _ => (JsonNode data, string guid) => BackgroundTaskResult.Failure
         };
 

@@ -1,0 +1,6 @@
+{
+    "name":"fail",
+    "data": {
+        "primary":"deliberately incompatible payload"
+    }
+}

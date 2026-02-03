@@ -72,6 +72,10 @@
             <h3>Long Job</h3>
             <pre id="jsonLong"></pre>
         </div>
+        <div class="jobSelect" id="failJob">
+            <h3>Fail Job</h3>
+            <pre id="jsonFail"></pre>
+        </div>
     </div>
     <hr>
     <div id="guidBox"></div>
@@ -81,7 +85,8 @@
     const entries = [
         {"div":"#shortJob","json":"/static/jobs/short.json"},
         {"div":"#mediumJob","json":"/static/jobs/medium.json"},
-        {"div":"#longJob","json":"/static/jobs/long.json"}
+        {"div":"#longJob","json":"/static/jobs/long.json"},
+        {"div":"#failJob","json":"/static/jobs/fail.json"}
     ]
     var jsonStrings = [];
     
@@ -127,12 +132,10 @@
                         })
                     }, 1000);
 
-                    $("#guidBox").find(".trash").each(function(){
-                        $(this).click(function(){
-                            console.log("Clicked trash.");
-                            clearInterval(interval);
-                            $(newActiveJob).remove();
-                        })
+                    $(newActiveJob).find(".trash").click(function(){
+                        console.log(this);
+                        clearInterval(interval);
+                        $(newActiveJob).remove();
                     })
 
                 }, "json");
