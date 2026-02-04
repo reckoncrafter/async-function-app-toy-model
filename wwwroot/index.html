@@ -63,6 +63,12 @@
     }
 </style>
 <body>
+    <label for="hostKey">Enter API Key</label>
+    <input id="hostKey" name="hostKey" type="text">
+    <br><br>
+    <label for="userEmail">Destination email address for job notifications</label>
+    <input id="userEmail" name="userEmail" type="email">
+    <br><br>
     
     <div id="jobSelectContainer">
         <div class="jobSelect" id="shortJob">
@@ -118,20 +124,42 @@
         $("#guidBox").append(newActiveJob);
 
         var interval = setInterval(() => {
-            $.get(`/jobStatus/${data["jobId"]}`, function(res){
-                const statusObj = JSON.parse(res);
-                console.log(statusObj);
-                $(newActiveJob).children(".jobStatus").html(statusObj.message);
-                if(statusObj.running == false){
-                    if(statusObj.success == false){
-                        $(newActiveJob.css("background-color", "red"));
+            $.ajax({
+                url: `/jobStatus/${data["jobId"]}`,
+                method:"GET",
+                headers: {
+                    "x-functions-key": $("#hostKey").val(),
+                },
+                success: function(res){
+                    const statusObj = JSON.parse(res);
+                    console.log(statusObj);
+                    $(newActiveJob).children(".jobStatus").html(statusObj.message);
+                    if(statusObj.running == false){
+                        if(statusObj.success == false){
+                            $(newActiveJob.css("background-color", "red"));
+                        }
+                        else{
+                            $(newActiveJob).css("background-color", "#aaaaaa");
+                        }
+                        clearInterval(interval);
                     }
-                    else{
-                        $(newActiveJob).css("background-color", "#aaaaaa");
-                    }
-                    clearInterval(interval);
-                }
-            })
+                },
+                error: function(xhr, status, error){console.error("Error:", status, error);}
+            });
+            // $.get(`/jobStatus/${data["jobId"]}`, function(res){
+            //     const statusObj = JSON.parse(res);
+            //     console.log(statusObj);
+            //     $(newActiveJob).children(".jobStatus").html(statusObj.message);
+            //     if(statusObj.running == false){
+            //         if(statusObj.success == false){
+            //             $(newActiveJob.css("background-color", "red"));
+            //         }
+            //         else{
+            //             $(newActiveJob).css("background-color", "#aaaaaa");
+            //         }
+            //         clearInterval(interval);
+            //     }
+            // }, )
         }, 1000);
 
         $(newActiveJob).find(".trash").click(function(){
@@ -145,7 +173,19 @@
         $("#submitCustom").click(function(){
             var jsonData = $("#customJob").val();
             console.log(jsonData);
-            $.post("/submitJob", jsonData, (res) => createActiveJob(res), "json");
+            //$.post("/submitJob", jsonData, (res) => createActiveJob(res), "json");
+            $.ajax({
+                url: "/submitJob",
+                method: "POST",
+                headers: {
+                    "x-functions-key": $("#hostKey").val(),
+                    "x-notification-email": $("#userEmail").val()
+                },
+                data: jsonData,
+                success: (res) => createActiveJob(res),
+                error: function(xhr, status, error){console.error("Error:", status, error)},
+                dataType: "json"
+            });
         })
 
         entries.forEach(e => {
@@ -155,7 +195,19 @@
             }, "text");
 
             $(e["div"]).click(function(){
-                $.post("/submitJob", e["jsonData"], (res) => createActiveJob(res), "json");
+                //$.post("/submitJob", e["jsonData"], (res) => createActiveJob(res), "json");
+                $.ajax({
+                    url: "/submitJob",
+                    method: "POST",
+                    headers: {
+                        "x-functions-key": $("#hostKey").val(),
+                        "x-notification-email": $("#userEmail").val()
+                    },
+                    data: e["jsonData"],
+                    success: (res) => createActiveJob(res),
+                    error: function(xhr, status, error){console.error("Error:", status, error)},
+                    dataType: "json"
+                });
             });
         });
     })

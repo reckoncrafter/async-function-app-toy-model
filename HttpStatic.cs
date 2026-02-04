@@ -9,6 +9,14 @@ using System.Net.Mime;
 
 namespace Company.Function;
 
+public static class FunctionRoot{
+    public static string GetRoot(){
+        var localRoot = Environment.GetEnvironmentVariable("AzureWebJobsScriptRoot");
+        var azureRoot = Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "", "site", "wwwroot");
+        return localRoot ?? azureRoot;
+    }
+}
+
 public class HttpStatic{
     private readonly ILogger<HttpStatic> _logger;
     public HttpStatic(ILogger<HttpStatic> logger)
@@ -46,10 +54,12 @@ public class HttpStatic{
         string content;
 
         try{
-            content = await File.ReadAllTextAsync($"wwwroot/{path}");
+            content = await File.ReadAllTextAsync(FunctionRoot.GetRoot() + $"/wwwroot/{path}");
         }
-        catch{
-            return req.CreateResponse(HttpStatusCode.NotFound);
+        catch(Exception e){
+            var resData = req.CreateResponse(HttpStatusCode.NotFound);
+            await resData.WriteStringAsync(e.Message);
+            return resData;
         }
         await response.WriteStringAsync(content);
         return response;

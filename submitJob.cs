@@ -31,6 +31,8 @@ public class submitJob
         _logger.LogInformation("Job submission recieved.");
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
+        _logger.LogInformation($"x-functions-key: [{req.Headers["x-functions-key"]}]");
+        _logger.LogInformation($"x-notification-email: [{req.Headers["x-notification-email"]}]");
         _logger.LogInformation(requestBody);
 
         JsonNode ? jobJson;
@@ -59,7 +61,7 @@ public class submitJob
         }
 
 
-        string jobGuid = BackgroundTaskHandler.RequestNewBackgroundTask(jobData);
+        string jobGuid = BackgroundTaskHandler.RequestNewBackgroundTask(jobData, req.Headers["x-notification-email"]);
         
         var response = new Dictionary<string, string>(){
             {"jobId", jobGuid},

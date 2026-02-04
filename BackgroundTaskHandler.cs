@@ -1,6 +1,7 @@
 namespace Company.Function;
 using Company.Models;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -19,7 +20,7 @@ public class StatusObject {
 
 public static class BackgroundTaskHandler{
     static Dictionary<string, StatusObject> JobStatus = new();
-
+    private static readonly MailService mailService = new();
     static BackgroundTaskResult ShortTask(JsonNode data, string guid)
     {
         Console.WriteLine($"ShortTask recieved: {data}");
@@ -57,7 +58,7 @@ public static class BackgroundTaskHandler{
         Task.Delay(5000).Wait();
         return BackgroundTaskResult.Failure;
     }
-    public static string RequestNewBackgroundTask(JobData jobData){
+    public static string RequestNewBackgroundTask(JobData jobData, string userEmail){
         string newGuid = Guid.NewGuid().ToString();
 
         BackgroundTask f = jobData.name switch 
@@ -86,6 +87,12 @@ public static class BackgroundTaskHandler{
                     break;
             }
             Console.WriteLine(JobStatus[newGuid]);
+            string htmlContent = $"""
+            <pre>
+            {newGuid}: {JobStatus[newGuid].message}
+            </pre>
+            """;
+            mailService.SendMail(userEmail, "Job Completion Notification", htmlContent);
         });
 
         JobStatus.Add(newGuid, new StatusObject(){

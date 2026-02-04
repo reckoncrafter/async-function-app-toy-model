@@ -23,6 +23,7 @@ public class jobStatus
         string guid)
     {
         string response = BackgroundTaskHandler.GetJobStatus(guid);
+       _logger.LogInformation($"x-functions-key: [{req.Headers["x-functions-key"]}]");
         return new OkObjectResult(response);
     }
 }
