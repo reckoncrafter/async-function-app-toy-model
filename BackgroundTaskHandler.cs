@@ -22,10 +22,12 @@ public class StatusObject {
 }
 
 public class MongoService {
-    public const string connectionString = "mongodb://localhost:27017";
-    public MongoClient client = new(connectionString);
+    public string connectionString;
+    public MongoClient client;
     public IMongoCollection<BsonDocument> collection;
     public MongoService(){
+        connectionString = Environment.GetEnvironmentVariable("DOCUMENTDB_CONNECTION_STRING") ?? "mongodb://localhost:27017";
+        client = new(connectionString);
         IMongoDatabase db = client.GetDatabase("GC_BACKGROUND_JOBS");
         IMongoCollection<BsonDocument> collection = db.GetCollection<BsonDocument>("JOBS");
         this.collection = collection;
