@@ -4,8 +4,11 @@ using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using MongoDB.Driver;
 
 using BackgroundTask = Func<System.Text.Json.Nodes.JsonNode, string, BackgroundTaskResult>;
+using Grpc.Core;
+using MongoDB.Bson;
 
 public enum BackgroundTaskResult {
     Success,
@@ -18,9 +21,52 @@ public class StatusObject {
     public bool success {get; set;} = false;
 }
 
+public class MongoService {
+    public const string connectionString = "mongodb://localhost:27017";
+    public MongoClient client = new(connectionString);
+    public IMongoCollection<BsonDocument> collection;
+    public MongoService(){
+        IMongoDatabase db = client.GetDatabase("GC_BACKGROUND_JOBS");
+        IMongoCollection<BsonDocument> collection = db.GetCollection<BsonDocument>("JOBS");
+        this.collection = collection;
+    }
+    public StatusObject Get(string guid){
+        var filter = Builders<BsonDocument>.Filter.Eq("guid", guid);
+        var result = collection.Find(filter).FirstOrDefault();
+        Console.WriteLine($"Retrieved job status for guid: {guid} with value: {result}");
+        return new StatusObject(){
+            message = result["message"].ToString(),
+            running = bool.Parse(result["running"].ToString()),
+            success = bool.Parse(result["success"].ToString())
+        };
+    }
+
+    public void Update(string guid, string field, string value){
+        var filter = Builders<BsonDocument>.Filter.Eq("guid", guid);
+        var update = Builders<BsonDocument>.Update.Set(field, value);
+        collection.UpdateOne(filter, update);
+    }
+
+    public void Add(string guid, StatusObject status){
+        Console.WriteLine($"Adding new job status for guid: {guid} with value: {JsonSerializer.Serialize(status)}");
+        BsonDocument newJob = new BsonDocument{
+            ["guid"] = guid,
+            ["message"] = status.message,
+            ["running"] = status.running,
+            ["success"] = status.success
+        };
+        collection.InsertOne(newJob);
+    }
+}
+
+
+
 public static class BackgroundTaskHandler{
-    static Dictionary<string, StatusObject> JobStatus = new();
-    private static readonly MailService mailService = new();
+    
+    //private static readonly MailService mailService = new();
+
+    private static readonly MongoService mongo = new();
+    
     static BackgroundTaskResult ShortTask(JsonNode data, string guid)
     {
         Console.WriteLine($"ShortTask recieved: {data}");
@@ -38,14 +84,14 @@ public static class BackgroundTaskHandler{
     static BackgroundTaskResult LongTask(JsonNode data, string guid)
     {
         Console.WriteLine($"LongTask recieved: {data}");
-        JobStatus[guid].message = "Collecting monoids...";
-        Console.WriteLine(JobStatus[guid]);
+        //JobStatus[guid].message = "Collecting monoids...";
+        mongo.Update(guid, "message", "Collecting monoids...");
         Task.Delay(10000).Wait();
-        JobStatus[guid].message = "Sheafifying endofunctors...";
-        Console.WriteLine(JobStatus[guid]);
+        //JobStatus[guid].message = "Sheafifying endofunctors...";
+        mongo.Update(guid, "message", "Sheafifying endofunctors...");
         Task.Delay(10000).Wait();
-        JobStatus[guid].message = "Calculating rectilinear tensors...";
-        Console.WriteLine(JobStatus[guid]);
+        //JobStatus[guid].message = "Calculating rectilinear tensors...";
+        mongo.Update(guid, "message", "Calculating rectilinear tensors...");
         Task.Delay(10000).Wait();
         return BackgroundTaskResult.Success;
     }
@@ -53,8 +99,8 @@ public static class BackgroundTaskHandler{
     static BackgroundTaskResult FailTask(JsonNode data, string guid)
     {
         Console.WriteLine($"FailTask recieved: {data}");
-        JobStatus[guid].message = "Preparing for failure...";
-        Console.WriteLine(JobStatus[guid]);
+        //JobStatus[guid].message = "Preparing for failure...";
+        mongo.Update(guid, "message", "Preparing for failure...");
         Task.Delay(5000).Wait();
         return BackgroundTaskResult.Failure;
     }
@@ -74,28 +120,41 @@ public static class BackgroundTaskHandler{
             BackgroundTaskResult r = f(jobData.data, newGuid);
             switch(r){
                 case BackgroundTaskResult.Success:
-                    JobStatus[newGuid].message = "Task has completed successfully";
-                    JobStatus[newGuid].running = false;
-                    JobStatus[newGuid].success = true;
+                    // JobStatus[newGuid].message = "Task has completed successfully";
+                    // JobStatus[newGuid].running = false;
+                    // JobStatus[newGuid].success = true;
+                    mongo.Update(newGuid, "message", "Task has completed successfully");
+                    mongo.Update(newGuid, "running", "false");
+                    mongo.Update(newGuid, "success", "true");
                     break;
                 case BackgroundTaskResult.Failure:
-                    JobStatus[newGuid].message = "Task has failed.";
-                    JobStatus[newGuid].running = false;
-                    JobStatus[newGuid].success = false;
+                    // JobStatus[newGuid].message = "Task has failed.";
+                    // JobStatus[newGuid].running = false;
+                    // JobStatus[newGuid].success = false;
+                    mongo.Update(newGuid, "message", "Task has failed.");
+                    mongo.Update(newGuid, "running", "false");
+                    mongo.Update(newGuid, "success", "false");
                     break;
                 default:
                     break;
             }
-            Console.WriteLine(JobStatus[newGuid]);
+            //Console.WriteLine($"Job Completed: {JsonSerializer.Serialize(JobStatus[newGuid])}");
+            Console.WriteLine($"Job Completed: {JsonSerializer.Serialize(mongo.Get(newGuid))}");
             string htmlContent = $"""
             <pre>
-            {newGuid}: {JobStatus[newGuid].message}
+            {newGuid}: {mongo.Get(newGuid).message}
             </pre>
             """;
-            mailService.SendMail(userEmail, "Job Completion Notification", htmlContent);
+            //mailService.SendMail(userEmail, "Job Completion Notification", htmlContent);
         });
 
-        JobStatus.Add(newGuid, new StatusObject(){
+        // JobStatus.Add(newGuid, new StatusObject(){
+        //     message = "Job in progress...",
+        //     running = true,
+        //     success = false
+        // });
+
+        mongo.Add(newGuid, new StatusObject(){
             message = "Job in progress...",
             running = true,
             success = false
@@ -107,7 +166,8 @@ public static class BackgroundTaskHandler{
     {
         string response;
         try{
-            response = JsonSerializer.Serialize(JobStatus[guid]);
+            //response = JsonSerializer.Serialize(JobStatus[guid]);
+            response = JsonSerializer.Serialize(mongo.Get(guid));
         }
         catch(KeyNotFoundException){
             response = "No status associated with this JobId";
@@ -116,5 +176,9 @@ public static class BackgroundTaskHandler{
             response = "Unknown error.";
         }
         return response;
+    }
+
+    public static void PurgeDatabase(){
+        mongo.collection.DeleteMany(new BsonDocument());
     }
 }

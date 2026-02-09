@@ -69,6 +69,8 @@
     <label for="userEmail">Destination email address for job notifications</label>
     <input id="userEmail" name="userEmail" type="email">
     <br><br>
+    <button id="purgeDb">Purge Database</button>
+    <hr>
     
     <div id="jobSelectContainer">
         <div class="jobSelect" id="shortJob">
@@ -210,9 +212,26 @@
                 });
             });
         });
-    })
 
+        $("#purgeDb").click(function(){
+            $.ajax({
+                url: "/purgeDatabase",
+                method: "DELETE",
+                headers: {
+                    "x-functions-key": $("#hostKey").val(),
+                },
+                success: function(res){
+                    console.log("Database purged successfully.");
+                    alert("Database purged successfully.");
+                },
+                error: function(xhr, status, error){
+                    console.error("Error:", status, error);
+                    alert("Error purging database. Check console for details.");
+                }
+            });
+        });
 
+    });
 </script>
 </body>
 </html>

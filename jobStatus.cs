@@ -27,3 +27,22 @@ public class jobStatus
         return new OkObjectResult(response);
     }
 }
+
+public class purgeDatabase
+{
+    private readonly ILogger<purgeDatabase> _logger;
+
+    public purgeDatabase(ILogger<purgeDatabase> logger)
+    {
+        _logger = logger;
+    }
+
+    [Function("purgeDatabase")]
+    public async Task<IActionResult> Run(
+        [HttpTrigger(AuthorizationLevel.Admin, "delete", Route = "purgeDatabase")] 
+        HttpRequest req)
+    {
+        BackgroundTaskHandler.PurgeDatabase();
+        return new OkObjectResult("Database Purged");
+    }
+}
