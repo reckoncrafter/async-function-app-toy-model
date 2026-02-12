@@ -39,12 +39,14 @@ public class submitJob
         try{
             jobJson = JsonNode.Parse(requestBody);
         }catch(JsonException){
+            _logger.LogError("Malformed JSON in request body.");
             return new ObjectResult("Malformed request."){
                 StatusCode = 400
             };
         }
 
         if(jobJson == null){
+            _logger.LogError("Empty JSON in request body.");
             return new ObjectResult("Unexpected Error."){
                 StatusCode = 500
             };
@@ -61,11 +63,11 @@ public class submitJob
         }
 
 
-        string jobGuid = BackgroundTaskHandler.RequestNewBackgroundTask(jobData, req.Headers["x-notification-email"]);
+        string jobId = BackgroundTaskHandler.RequestNewBackgroundTask(jobData, req.Headers["x-notification-email"]);
         
         var response = new Dictionary<string, string>(){
-            {"jobId", jobGuid},
-            {"jobStatus", BackgroundTaskHandler.GetJobStatus(jobGuid)}
+            {"jobId", jobId},
+            {"jobStatus", BackgroundTaskHandler.GetJobStatus(jobId)}
         };
 
         return new OkObjectResult(JsonSerializer.Serialize(response));

@@ -28,21 +28,21 @@ public class jobStatus
     }
 }
 
-public class purgeDatabase
-{
-    private readonly ILogger<purgeDatabase> _logger;
+// public class purgeDatabase
+// {
+//     private readonly ILogger<purgeDatabase> _logger;
 
-    public purgeDatabase(ILogger<purgeDatabase> logger)
-    {
-        _logger = logger;
-    }
+//     public purgeDatabase(ILogger<purgeDatabase> logger)
+//     {
+//         _logger = logger;
+//     }
 
-    [Function("purgeDatabase")]
-    public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Admin, "delete", Route = "purgeDatabase")] 
-        HttpRequest req)
-    {
-        BackgroundTaskHandler.PurgeDatabase();
-        return new OkObjectResult("Database Purged");
-    }
-}
+//     [Function("purgeDatabase")]
+//     public async Task<IActionResult> Run(
+//         [HttpTrigger(AuthorizationLevel.Admin, "delete", Route = "purgeDatabase")] 
+//         HttpRequest req)
+//     {
+//         BackgroundTaskHandler.PurgeDatabase();
+//         return new OkObjectResult("Database Purged");
+//     }
+// }

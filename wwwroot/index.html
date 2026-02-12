@@ -119,10 +119,12 @@
     `
 
     function createActiveJob(data){
+        /**
+         * @type {{ jobId: number, isCompleted: number, isError: number, dateCompleted: string, statusMessage: string, jobDescription: string }}
+         */
         const statusObj = JSON.parse(data["jobStatus"]);
         console.log(statusObj);
-
-        var newActiveJob = $(activeJob(data["jobId"], statusObj.message));
+        var newActiveJob = $(activeJob(data["jobId"], statusObj.statusMessage));
         $("#guidBox").append(newActiveJob);
 
         var interval = setInterval(() => {
@@ -135,10 +137,10 @@
                 success: function(res){
                     const statusObj = JSON.parse(res);
                     console.log(statusObj);
-                    $(newActiveJob).children(".jobStatus").html(statusObj.message);
-                    if(statusObj.running == false){
-                        if(statusObj.success == false){
-                            $(newActiveJob.css("background-color", "red"));
+                    $(newActiveJob).children(".jobStatus").html(statusObj.statusMessage);
+                    if(statusObj.isCompleted == true){
+                        if(statusObj.isError == true){
+                            $(newActiveJob).css("background-color", "red");
                         }
                         else{
                             $(newActiveJob).css("background-color", "#aaaaaa");
@@ -148,20 +150,6 @@
                 },
                 error: function(xhr, status, error){console.error("Error:", status, error);}
             });
-            // $.get(`/jobStatus/${data["jobId"]}`, function(res){
-            //     const statusObj = JSON.parse(res);
-            //     console.log(statusObj);
-            //     $(newActiveJob).children(".jobStatus").html(statusObj.message);
-            //     if(statusObj.running == false){
-            //         if(statusObj.success == false){
-            //             $(newActiveJob.css("background-color", "red"));
-            //         }
-            //         else{
-            //             $(newActiveJob).css("background-color", "#aaaaaa");
-            //         }
-            //         clearInterval(interval);
-            //     }
-            // }, )
         }, 1000);
 
         $(newActiveJob).find(".trash").click(function(){
@@ -175,7 +163,6 @@
         $("#submitCustom").click(function(){
             var jsonData = $("#customJob").val();
             console.log(jsonData);
-            //$.post("/submitJob", jsonData, (res) => createActiveJob(res), "json");
             $.ajax({
                 url: "/submitJob",
                 method: "POST",
@@ -197,7 +184,6 @@
             }, "text");
 
             $(e["div"]).click(function(){
-                //$.post("/submitJob", e["jsonData"], (res) => createActiveJob(res), "json");
                 $.ajax({
                     url: "/submitJob",
                     method: "POST",

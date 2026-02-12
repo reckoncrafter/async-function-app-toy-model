@@ -6,16 +6,17 @@ using Microsoft.Extensions.Logging;
 
 public class MailService{
     public string connectionString;
-    public EmailClient emailClient;
+    public EmailClient? emailClient;
     public MailService(){
         connectionString = Environment.GetEnvironmentVariable("COMMUNICATION_SERVICES_CONNECTION_STRING");
-        emailClient = new EmailClient(connectionString);
-    }
-    public async Task SendMail(string recip, string subject, string content){
         if(connectionString == null){
             Console.WriteLine("Failed to get COMMUNICATION_SERVICES_CONNECTION_STRING.");
             return;
         }
+        emailClient = new EmailClient(connectionString);
+    }
+    public async Task SendMail(string recip, string subject, string content){
+
         if(recip == ""){
             Console.WriteLine("No recipient defined for email.");
             return;
@@ -28,6 +29,11 @@ public class MailService{
             Console.WriteLine("No email content");
             return;
         }
+        if(emailClient == null){
+            Console.WriteLine("Email client not initialized.");
+            return;
+        }
+
         EmailSendOperation emailSendOperation = await emailClient.SendAsync(
             Azure.WaitUntil.Started,
             "DoNotReply@6ee8648e-9c03-4afe-af7c-f21d996ec752.azurecomm.net",
