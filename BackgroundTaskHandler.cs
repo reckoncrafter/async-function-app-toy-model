@@ -91,7 +91,9 @@ public static class BackgroundTaskHandler{
             string htmlContent = $"""
             <pre>
             JobId: {newJobId}
+            Date Completed: {sql.Get(newJobId).dateCompleted}
             Status: {sql.Get(newJobId).statusMessage}
+            Description: {sql.Get(newJobId).jobDescription}
             </pre>
             """;
             mailService.SendMail(userEmail, "Job Completion Notification", htmlContent);
